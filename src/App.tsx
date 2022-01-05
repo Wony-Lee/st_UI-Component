@@ -1,97 +1,69 @@
 import React, { useEffect, useState } from "react";
-import styled from "@emotion/styled/macro";
-import Skeleton from "./components/Skeleton";
+import axios from "axios";
+import Pagination from "./components/Pagination";
 
-const Base = styled.div`
-    display: grid;
-    width: 100%;
-    grid-template-columns: repeat(5, 1fr);
-    column-gap: 12px;
-    row-gap: 24px;
-`;
+interface Airline {
+    id: number;
+    name: string;
+    country: string;
+    logo: string;
+    slogan: string;
+    head_quaters: string;
+    website: string;
+    established: string;
+}
 
-const Container = styled.div`
-    display: flex;
-    flex-direction: column;
-    box-shadow: rgb(0 0 0 / 4%) 0px 4px 16px 0px;
-    border-radius: 4px;
-`;
+interface Passenger {
+    _id: string;
+    name: string;
+    trips: number;
+    airline: Airline;
+    __v: number;
+}
 
-const ImageWrapper = styled.div`
-    width: 100%;
-`;
-
-const Image = styled.img`
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-`;
-
-const Info = styled.div`
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 0%;
-`;
-
-const Title = styled.h4`
-    margin: 0;
-    padding: 0;
-    font-size: 24px;
-`;
-
-const Description = styled.p`
-    margin: 8px 0 0 0;
-    padding: 0;
-    font-size: 16px;
-`;
-
-const Placeholder: React.FC = () => (
-    <Container>
-        <ImageWrapper>
-            <Skeleton width={320} height={220} />
-        </ImageWrapper>
-        <Info>
-            <Skeleton width={150} height={29} rounded />
-            <div style={{ height: "8px" }} />
-            <Skeleton width={200} height={19} rounded />
-        </Info>
-    </Container>
-);
-
-const Item: React.FC = () => {
-    return (
-        <Container>
-            <ImageWrapper>
-                <Image
-                    src={
-                        "https://img.webmd.com/dtmcms/live/webmd/consumer_assets/site_images/article_thumbnails/other/cat_relaxing_on_patio_other/1800x1200_cat_relaxing_on_patio_other.jpg"
-                    }
-                />
-            </ImageWrapper>
-            <Info>
-                <Title>Cat !@!@#</Title>
-                <Description>real?!?!?!?!</Description>
-            </Info>
-        </Container>
-    );
-};
+interface Response {
+    totalPassengers: number;
+    totalPages: number;
+    data: Array<Passenger>;
+}
 
 function App() {
-    const [loading, setLoading] = useState<Boolean>(true);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [items, setItems] = useState<Array<Passenger>>([]);
+
+    const handlePageChange = (currentPage: number): void => {
+        setPage(currentPage);
+    };
+
     useEffect(() => {
-        setTimeout(() => setLoading(false), 2000);
+        const fetch = async () => {
+            const params = { page, size: 10 };
+            const {
+                data: { totalPages, data },
+            } = await axios.get<Response>(
+                "https://api.instantwebtools.net/passenger",
+                { params }
+            );
+            setTotalPages(totalPages);
+            setItems(data);
+        };
+        fetch();
     }, []);
+
     return (
-        <Base>
-            {loading
-                ? Array.from({ length: 25 }).map((_, idx) => (
-                      <Placeholder key={idx} />
-                  ))
-                : Array.from({ length: 25 }).map((_, idx) => (
-                      <Item key={idx} />
-                  ))}
-        </Base>
+        <div className="App">
+            <ul>
+                {items.map((item) => (
+                    <li key={item._id}>{item.name}</li>
+                ))}
+            </ul>
+            <Pagination
+                count={totalPages}
+                page={page}
+                onPageChange={handlePageChange}
+            ></Pagination>
+        </div>
     );
 }
 
