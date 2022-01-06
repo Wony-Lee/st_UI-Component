@@ -1,69 +1,59 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import Pagination from "./components/Pagination";
+import styled from "@emotion/styled/macro";
+import Modal from "./components/Modal";
 
-interface Airline {
-    id: number;
-    name: string;
-    country: string;
-    logo: string;
-    slogan: string;
-    head_quaters: string;
-    website: string;
-    established: string;
-}
+const Container = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+`;
 
-interface Passenger {
-    _id: string;
-    name: string;
-    trips: number;
-    airline: Airline;
-    __v: number;
-}
+const Button = styled.button`
+    width: 200px;
+    height: 60px;
+    border-radius: 12px;
+    color: #fff;
+    background-color: #3d6afe;
+    margin: 0;
+    border: none;
+    font-size: 24px;
+    &:active {
+        opacity: 0.8;
+    }
+`;
 
-interface Response {
-    totalPassengers: number;
-    totalPages: number;
-    data: Array<Passenger>;
-}
+const ModalBody = styled.div`
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    background: #fff;
+    max-height: calc(100vh - 16px);
+    overflow: hidden auto;
+    position: relative;
+    padding-block: 12px;
+    padding-inline: 12px;
+`;
 
 function App() {
-    const [page, setPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
-    const [items, setItems] = useState<Array<Passenger>>([]);
-
-    const handlePageChange = (currentPage: number): void => {
-        setPage(currentPage);
+    const [isOpen, setIsOpen] = useState(false);
+    const handleClose = () => {
+        setIsOpen(false);
     };
 
-    useEffect(() => {
-        const fetch = async () => {
-            const params = { page, size: 10 };
-            const {
-                data: { totalPages, data },
-            } = await axios.get<Response>(
-                "https://api.instantwebtools.net/passenger",
-                { params }
-            );
-            setTotalPages(totalPages);
-            setItems(data);
-        };
-        fetch();
-    }, []);
-
+    const handleOpen = () => {
+        setIsOpen(true);
+    };
     return (
-        <div className="App">
-            <ul>
-                {items.map((item) => (
-                    <li key={item._id}>{item.name}</li>
-                ))}
-            </ul>
-            <Pagination
-                count={totalPages}
-                page={page}
-                onPageChange={handlePageChange}
-            ></Pagination>
-        </div>
+        <Container>
+            <Button onClick={handleOpen}>OPEN</Button>
+            <Modal isOpen={isOpen} onClose={handleClose}>
+                <ModalBody>
+                    <h2>Title</h2>
+                    <p>Description</p>
+                </ModalBody>
+            </Modal>
+        </Container>
     );
 }
 
