@@ -1,59 +1,80 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "@emotion/styled/macro";
-import Modal from "./components/Modal";
+import axios from "axios";
+import { throttle } from "throttle-debounce";
 
-const Container = styled.div`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-`;
+interface Airline {
+    id: number;
+    name: string;
+    country: string;
+    logo: string;
+    slogan: string;
+    head_quaters: string;
+    website: string;
+    established: string;
+}
 
-const Button = styled.button`
-    width: 200px;
-    height: 60px;
-    border-radius: 12px;
-    color: #fff;
-    background-color: #3d6afe;
-    margin: 0;
-    border: none;
-    font-size: 24px;
-    &:active {
-        opacity: 0.8;
-    }
-`;
-
-const ModalBody = styled.div`
-    border-radius: 8px;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    background: #fff;
-    max-height: calc(100vh - 16px);
-    overflow: hidden auto;
-    position: relative;
-    padding-block: 12px;
-    padding-inline: 12px;
-`;
+interface Passenger {
+    _id: string;
+    name: string;
+    trips: number;
+    airline: Airline;
+    __v: number;
+}
 
 function App() {
-    const [isOpen, setIsOpen] = useState(false);
-    const handleClose = () => {
-        setIsOpen(false);
+    const listRef = useRef<HTMLUListElement>(null);
+    const currentPageRef = useRef<number>(0);
+    const [passengers, setPassengers] = useState<Array<Passenger>>([]);
+    const [isLast, setIsLast] = useState<boolean>(false);
+    const [isScrollBottom, setIsScrollBottom] = useState<boolean>(false);
+
+    const getPassengers = async (init?: boolean) => {
+        const params = { page: currentPageRef.current, size: 30 };
+        try {
+            const response = await axios.get(
+                "https://api.instantwebtools.net/v1/passenger",
+                { params }
+            );
+            const passengers = response.data.data;
+            console.log("passengers", passengers);
+            const isLast = response.data.totalPages === currentPageRef.current;
+            init
+                ? setPassengers(passengers)
+                : setPassengers((prev) => [...prev, ...passengers]);
+            setIsLast(isLast);
+        } catch (e) {
+            console.error(e);
+        }
     };
 
-    const handleOpen = () => {
-        setIsOpen(true);
-    };
+    const handleScroll = throttle(1000, () => {
+        if (listRef.current) {
+            const { scrollHeight, offsetHeight, scrollTop } = listRef.current;
+            const offset = 50;
+            setIsScrollBottom(scrollHeight - offsetHeight - scrollTop < offset);
+        }
+    });
+    useEffect(() => {
+        if (isScrollBottom) {
+            currentPageRef.current += 1;
+            !isLast && getPassengers();
+        }
+        handleScroll();
+    }, [isScrollBottom, isLast]);
+    useEffect(() => {
+        getPassengers(true);
+    }, []);
     return (
-        <Container>
-            <Button onClick={handleOpen}>OPEN</Button>
-            <Modal isOpen={isOpen} onClose={handleClose}>
-                <ModalBody>
-                    <h2>Title</h2>
-                    <p>Description</p>
-                </ModalBody>
-            </Modal>
-        </Container>
+        <div>
+            <ul ref={listRef} className={"list"} onScroll={handleScroll}>
+                {passengers.map((passenger) => (
+                    <li className={"item"} key={passenger._id}>
+                        {passenger.name}
+                    </li>
+                ))}
+            </ul>
+        </div>
     );
 }
 
